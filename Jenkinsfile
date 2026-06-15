@@ -4,7 +4,7 @@ pipeline {
     environment {
         JAVA_TOOL_OPTIONS = '-Dfile.encoding=UTF-8'
         MAVEN_OPTS        = '-Xmx512m -XX:MaxMetaspaceSize=128m'
-        MVN               = './mvnw --batch-mode --no-transfer-progress'
+        MVN               = 'mvn --batch-mode --no-transfer-progress'
         TEST_REPORTS_DIR  = 'target/surefire-reports'
         COVERAGE_DIR      = 'target/coverage-report'
     }
