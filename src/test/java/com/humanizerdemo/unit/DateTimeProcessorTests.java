@@ -25,34 +25,34 @@ class DateTimeProcessorTests {
     }
 
     @Test
-    void describeRelativeTo_givenSameDate_returnsNowDescription() {
+    void describeRelativeTo_givenSameDate_returnsJustNow() {
         String relativeDescription = dateTimeProcessorUnderTest
                 .describeRelativeTo(fixedReferenceDate, fixedReferenceDate);
-        assertThat(relativeDescription).containsIgnoringCase("now");
+        assertThat(relativeDescription).isEqualTo("just now");
     }
 
     @Test
-    void describeRelativeTo_givenOneHourBeforeReference_returnsAnHourAgoDescription() {
+    void describeRelativeTo_givenOneHourBeforeReference_returnsAnHourAgo() {
         Date oneHourBeforeReference = new Date(fixedReferenceDate.getTime() - 3_600_000L);
         String relativeDescription = dateTimeProcessorUnderTest
                 .describeRelativeTo(oneHourBeforeReference, fixedReferenceDate);
-        assertThat(relativeDescription).containsIgnoringCase("hour");
+        assertThat(relativeDescription).isEqualTo("an hour ago");
     }
 
     @Test
-    void describeRelativeTo_givenThreeDaysBeforeReference_returnsDaysAgoDescription() {
+    void describeRelativeTo_givenThreeDaysBeforeReference_returnsDaysAgo() {
         Date threeDaysBeforeReference = new Date(fixedReferenceDate.getTime() - 3L * 86_400_000L);
         String relativeDescription = dateTimeProcessorUnderTest
                 .describeRelativeTo(threeDaysBeforeReference, fixedReferenceDate);
-        assertThat(relativeDescription).containsIgnoringCase("day");
+        assertThat(relativeDescription).isEqualTo("3 days ago");
     }
 
     @Test
-    void describeRelativeTo_givenTwoWeeksAfterReference_returnsFutureDescription() {
+    void describeRelativeTo_givenTwoWeeksAfterReference_returnsInTwoWeeks() {
         Date twoWeeksAfterReference = new Date(fixedReferenceDate.getTime() + 14L * 86_400_000L);
         String relativeDescription = dateTimeProcessorUnderTest
                 .describeRelativeTo(twoWeeksAfterReference, fixedReferenceDate);
-        assertThat(relativeDescription).isNotBlank();
+        assertThat(relativeDescription).isEqualTo("in 2 weeks");
     }
 
     @Test
@@ -71,17 +71,17 @@ class DateTimeProcessorTests {
                 .hasMessageContaining("referenceDate");
     }
 
-    @ParameterizedTest(name = "duration({0}ms) contains ''{1}''")
+    @ParameterizedTest(name = "duration({0}ms) => ''{1}''")
     @CsvSource({
-        "60000,   minute",
-        "3600000, hour",
-        "86400000, day"
+        "60000,    a minute",
+        "3600000,  an hour",
+        "86400000, a day"
     })
     void describeDurationInMilliseconds_givenCommonDurations_returnsReadableString(
-            long durationInMilliseconds, String expectedFragment) {
+            long durationInMilliseconds, String expectedDescription) {
         String durationDescription = dateTimeProcessorUnderTest
                 .describeDurationInMilliseconds(durationInMilliseconds);
-        assertThat(durationDescription).containsIgnoringCase(expectedFragment);
+        assertThat(durationDescription).isEqualTo(expectedDescription.trim());
     }
 
     @Test

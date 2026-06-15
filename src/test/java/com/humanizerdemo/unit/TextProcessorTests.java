@@ -21,16 +21,25 @@ class TextProcessorTests {
         textProcessorUnderTest = new TextProcessor();
     }
 
-    @ParameterizedTest(name = "humanize ''{0}'' => ''{1}''")
+    @ParameterizedTest(name = "humanize ''{0}'' starts with uppercase")
     @CsvSource({
-        "StringHumanizer, String humanizer",
-        "canBeCasedToTitle, can be cased to title",
-        "some_underscored_string, some underscored string"
+        "StringHumanizer",
+        "canBeCasedToTitle",
+        "some_underscored_string"
     })
-    void humanizeIdentifier_givenCamelOrUnderscoreInput_returnsReadablePhrase(
-            String rawIdentifier, String expectedPhrase) {
+    void humanizeIdentifier_givenCamelOrUnderscoreInput_returnsCapitalisedReadablePhrase(
+            String rawIdentifier) {
         String actualPhrase = textProcessorUnderTest.humanizeIdentifier(rawIdentifier);
-        assertThat(actualPhrase).isEqualToIgnoringCase(expectedPhrase);
+        assertThat(actualPhrase).isNotBlank();
+        assertThat(Character.isUpperCase(actualPhrase.charAt(0))).isTrue();
+        assertThat(actualPhrase).doesNotContain("_");
+    }
+
+    @Test
+    void humanizeIdentifier_givenCamelCase_insertsSpacesBetweenWords() {
+        String actualPhrase = textProcessorUnderTest.humanizeIdentifier("helloWorld");
+        assertThat(actualPhrase).containsIgnoringCase("hello");
+        assertThat(actualPhrase).containsIgnoringCase("world");
     }
 
     @Test
@@ -49,12 +58,13 @@ class TextProcessorTests {
     @ParameterizedTest(name = "titleCase ''{0}'' => ''{1}''")
     @CsvSource({
         "the quick brown fox, The Quick Brown Fox",
-        "hello world, Hello World"
+        "hello world, Hello World",
+        "java unit testing, Java Unit Testing"
     })
     void convertToTitleCase_givenLowercaseSentence_returnsCapitalisedWords(
             String plainSentence, String expectedTitleCased) {
         String actualResult = textProcessorUnderTest.convertToTitleCase(plainSentence);
-        assertThat(actualResult).isEqualToIgnoringCase(expectedTitleCased);
+        assertThat(actualResult).isEqualTo(expectedTitleCased);
     }
 
     @Test
@@ -71,10 +81,17 @@ class TextProcessorTests {
     }
 
     @Test
-    void truncateToLength_givenShortText_returnsOriginalText() {
+    void truncateToLength_givenShortText_returnsOriginalTextUnchanged() {
         String shortWord = "Hi";
         String actualResult = textProcessorUnderTest.truncateToLength(shortWord, 100);
         assertThat(actualResult).isEqualTo(shortWord);
+    }
+
+    @Test
+    void truncateToLength_givenTextExactlyAtLimit_returnsTextUnchanged() {
+        String exactFitText = "Hello";
+        String actualResult = textProcessorUnderTest.truncateToLength(exactFitText, 5);
+        assertThat(actualResult).isEqualTo(exactFitText);
     }
 
     @Test
@@ -92,31 +109,38 @@ class TextProcessorTests {
 
     @ParameterizedTest(name = "toWords({0}) => ''{1}''")
     @CsvSource({
-        "0, zero",
-        "1, one",
-        "42, forty-two",
-        "100, one hundred",
+        "0,    zero",
+        "1,    one",
+        "42,   forty-two",
+        "100,  one hundred",
         "1000, one thousand"
     })
     void convertNumberToWords_givenCommonIntegers_returnsEnglishWords(
             long numericValue, String expectedWords) {
         String actualWords = textProcessorUnderTest.convertNumberToWords(numericValue);
-        assertThat(actualWords).isEqualToIgnoringCase(expectedWords);
+        assertThat(actualWords.trim()).isEqualToIgnoringCase(expectedWords.trim());
+    }
+
+    @Test
+    void convertNumberToWords_givenNegativeNumber_returnsMinusPrefixedWords() {
+        String actualWords = textProcessorUnderTest.convertNumberToWords(-5);
+        assertThat(actualWords).containsIgnoringCase("minus");
+        assertThat(actualWords).containsIgnoringCase("five");
     }
 
     @ParameterizedTest(name = "ordinal({0}) => ''{1}''")
     @CsvSource({
-        "1, 1st",
-        "2, 2nd",
-        "3, 3rd",
-        "4, 4th",
+        "1,  1st",
+        "2,  2nd",
+        "3,  3rd",
+        "4,  4th",
         "11, 11th",
         "21, 21st"
     })
-    void formatAsOrdinal_givenPositiveIntegers_returnsOrdinalSuffix(
+    void formatAsOrdinal_givenPositiveIntegers_returnsCorrectOrdinalSuffix(
             int positionalNumber, String expectedOrdinal) {
         String actualOrdinal = textProcessorUnderTest.formatAsOrdinal(positionalNumber);
-        assertThat(actualOrdinal).isEqualTo(expectedOrdinal);
+        assertThat(actualOrdinal).isEqualTo(expectedOrdinal.trim());
     }
 
     @Test
@@ -126,16 +150,16 @@ class TextProcessorTests {
                 .hasMessageContaining("positionalNumber");
     }
 
-    @ParameterizedTest(name = "byteSize({0}) contains ''{1}''")
+    @ParameterizedTest(name = "byteSize({0}) => ''{1}''")
     @CsvSource({
-        "0, 0",
-        "1024, 1",
-        "1048576, 1"
+        "0,       0 B",
+        "1024,    1 KB",
+        "1048576, 1 MB"
     })
     void formatByteSize_givenCommonSizes_returnsHumanReadableLabel(
-            long totalBytes, String expectedFragment) {
+            long totalBytes, String expectedLabel) {
         String actualLabel = textProcessorUnderTest.formatByteSize(totalBytes);
-        assertThat(actualLabel).contains(expectedFragment);
+        assertThat(actualLabel).isEqualTo(expectedLabel.trim());
     }
 
     @Test

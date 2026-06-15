@@ -19,19 +19,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junitVersion>5.10.2</junitVersion>
         <assertjVersion>3.25.3</assertjVersion>
-        <humanizer4jVersion>1.0.0</humanizer4jVersion>
         <surefireVersion>3.2.5</surefireVersion>
         <jacocoVersion>0.8.11</jacocoVersion>
         <reportGeneratorVersion>0.8.11</reportGeneratorVersion>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.github.mfornos</groupId>
-            <artifactId>humanize-slim</artifactId>
-            <version>1.2.2</version>
-        </dependency>
-
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>

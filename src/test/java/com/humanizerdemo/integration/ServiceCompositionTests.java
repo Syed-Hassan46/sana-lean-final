@@ -35,6 +35,9 @@ class ServiceCompositionTests {
 
         assertThat(titleCasedResult).isNotBlank();
         assertThat(Character.isUpperCase(titleCasedResult.charAt(0))).isTrue();
+        assertThat(titleCasedResult).contains("Order");
+        assertThat(titleCasedResult).contains("Line");
+        assertThat(titleCasedResult).contains("Items");
     }
 
     @Test
@@ -43,10 +46,10 @@ class ServiceCompositionTests {
         String runNumberOrdinal = sharedTextProcessor.formatAsOrdinal(3);
         String batchLabel = sharedTextProcessor.convertToTitleCase("batch processing run");
 
-        String deploymentSummary = batchLabel + ": " + itemCountInWords
+        String deploymentSummary = batchLabel + ": " + itemCountInWords.trim()
                 + " items processed (" + runNumberOrdinal + " run)";
 
-        assertThat(deploymentSummary).contains("three");
+        assertThat(deploymentSummary).containsIgnoringCase("three");
         assertThat(deploymentSummary).contains("3rd");
         assertThat(deploymentSummary).startsWith("Batch");
     }
@@ -64,7 +67,8 @@ class ServiceCompositionTests {
 
         assertThat(notificationMessage).isNotBlank();
         assertThat(notificationMessage).endsWith(".");
-        assertThat(relativeTimeDescription).containsIgnoringCase("hour");
+        assertThat(relativeTimeDescription).contains("hour");
+        assertThat(relativeTimeDescription).endsWith("ago");
     }
 
     @Test
@@ -74,8 +78,8 @@ class ServiceCompositionTests {
         String humanReadableSizeLabel = sharedTextProcessor.formatByteSize(oneKilobyte);
         String byteCountInWords = sharedTextProcessor.convertNumberToWords(oneKilobyte);
 
-        assertThat(humanReadableSizeLabel).isNotBlank();
-        assertThat(byteCountInWords).containsIgnoringCase("thousand");
+        assertThat(humanReadableSizeLabel).isEqualTo("1 KB");
+        assertThat(byteCountInWords.trim()).containsIgnoringCase("thousand");
     }
 
     @Test
@@ -89,7 +93,7 @@ class ServiceCompositionTests {
         assertThat(truncatedReadableLabel).isNotBlank();
     }
 
-    @ParameterizedTest(name = "ordinal({0}) is non-blank and ends with a letter")
+    @ParameterizedTest(name = "ordinal({0}) ends with a letter")
     @ValueSource(ints = {1, 2, 3, 11, 21, 100})
     void formatAsOrdinal_givenVariousPositiveIntegers_returnsNonBlankOrdinalString(
             int positionalNumber) {
