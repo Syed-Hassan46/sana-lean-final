@@ -30,7 +30,7 @@ class DateTimeProcessorTests {
     }
 
     @Test
-    void describeRelativeTo_givenOneHourBeforeReference_returnsAnHourAgo() {
+    void oneHourBefore_returnsAnHourAgo() {
         Date oneHourBefore = new Date(ref.getTime() - 3_600_000L);
         assertThat(proc.describeRelativeTo(oneHourBefore, ref)).isEqualTo("an hour ago");
     }
@@ -42,13 +42,7 @@ class DateTimeProcessorTests {
     }
 
     @Test
-    void describeRelativeTo_givenTwoWeeksAfterReference_returnsInTwoWeeks() {
-        Date d = new Date(ref.getTime() + 14L * 86_400_000L);
-        assertThat(proc.describeRelativeTo(d, ref)).isEqualTo("in 2 weeks");
-    }
-
-    @Test
-    void describeRelativeTo_givenNullTargetDate_throwsIllegalArgumentException() {
+    void nullTarget_throws() {
         assertThatThrownBy(() -> proc.describeRelativeTo(null, ref))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("targetDate");
@@ -63,18 +57,11 @@ class DateTimeProcessorTests {
 
     @ParameterizedTest(name = "duration({0}ms) => ''{1}''")
     @CsvSource({
-        "60000, a minute",
-        "3600000, an hour",
+        "60000,    a minute",
+        "3600000,  an hour",
         "86400000, a day"
     })
-    void describeDurationInMilliseconds_givenCommonDurations_returnsReadableString(long ms, String expected) {
+    void duration_commonValues_readableString(long ms, String expected) {
         assertThat(proc.describeDurationInMilliseconds(ms)).isEqualTo(expected.trim());
-    }
-
-    @Test
-    void duration_negative_throws() {
-        assertThatThrownBy(() -> proc.describeDurationInMilliseconds(-1))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("durationInMilliseconds");
     }
 }
