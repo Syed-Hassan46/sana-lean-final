@@ -15,78 +15,65 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Tag("unit")
 class DateTimeProcessorTests {
 
-    private DateTimeProcessor dateTimeProcessorUnderTest;
-    private Date fixedReferenceDate;
+    private DateTimeProcessor proc;
+    private Date ref;
 
     @BeforeEach
-    void initialise() {
-        dateTimeProcessorUnderTest = new DateTimeProcessor();
-        fixedReferenceDate = new Date(1717243200000L);
+    void setUp() {
+        proc = new DateTimeProcessor();
+        ref  = new Date(1717243200000L);
     }
 
     @Test
-    void describeRelativeTo_givenSameDate_returnsJustNow() {
-        String relativeDescription = dateTimeProcessorUnderTest
-                .describeRelativeTo(fixedReferenceDate, fixedReferenceDate);
-        assertThat(relativeDescription).isEqualTo("just now");
+    void sameDate_returnsJustNow() {
+        assertThat(proc.describeRelativeTo(ref, ref)).isEqualTo("just now");
     }
 
     @Test
     void describeRelativeTo_givenOneHourBeforeReference_returnsAnHourAgo() {
-        Date oneHourBeforeReference = new Date(fixedReferenceDate.getTime() - 3_600_000L);
-        String relativeDescription = dateTimeProcessorUnderTest
-                .describeRelativeTo(oneHourBeforeReference, fixedReferenceDate);
-        assertThat(relativeDescription).isEqualTo("an hour ago");
+        Date oneHourBefore = new Date(ref.getTime() - 3_600_000L);
+        assertThat(proc.describeRelativeTo(oneHourBefore, ref)).isEqualTo("an hour ago");
     }
 
     @Test
-    void describeRelativeTo_givenThreeDaysBeforeReference_returnsDaysAgo() {
-        Date threeDaysBeforeReference = new Date(fixedReferenceDate.getTime() - 3L * 86_400_000L);
-        String relativeDescription = dateTimeProcessorUnderTest
-                .describeRelativeTo(threeDaysBeforeReference, fixedReferenceDate);
-        assertThat(relativeDescription).isEqualTo("3 days ago");
+    void threeDaysAgo() {
+        Date d = new Date(ref.getTime() - 3L * 86_400_000L);
+        assertThat(proc.describeRelativeTo(d, ref)).isEqualTo("3 days ago");
     }
 
     @Test
     void describeRelativeTo_givenTwoWeeksAfterReference_returnsInTwoWeeks() {
-        Date twoWeeksAfterReference = new Date(fixedReferenceDate.getTime() + 14L * 86_400_000L);
-        String relativeDescription = dateTimeProcessorUnderTest
-                .describeRelativeTo(twoWeeksAfterReference, fixedReferenceDate);
-        assertThat(relativeDescription).isEqualTo("in 2 weeks");
+        Date d = new Date(ref.getTime() + 14L * 86_400_000L);
+        assertThat(proc.describeRelativeTo(d, ref)).isEqualTo("in 2 weeks");
     }
 
     @Test
     void describeRelativeTo_givenNullTargetDate_throwsIllegalArgumentException() {
-        assertThatThrownBy(() -> dateTimeProcessorUnderTest
-                .describeRelativeTo(null, fixedReferenceDate))
+        assertThatThrownBy(() -> proc.describeRelativeTo(null, ref))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("targetDate");
     }
 
     @Test
-    void describeRelativeTo_givenNullReferenceDate_throwsIllegalArgumentException() {
-        assertThatThrownBy(() -> dateTimeProcessorUnderTest
-                .describeRelativeTo(fixedReferenceDate, null))
+    void nullReference_throws() {
+        assertThatThrownBy(() -> proc.describeRelativeTo(ref, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("referenceDate");
     }
 
     @ParameterizedTest(name = "duration({0}ms) => ''{1}''")
     @CsvSource({
-        "60000,    a minute",
-        "3600000,  an hour",
+        "60000, a minute",
+        "3600000, an hour",
         "86400000, a day"
     })
-    void describeDurationInMilliseconds_givenCommonDurations_returnsReadableString(
-            long durationInMilliseconds, String expectedDescription) {
-        String durationDescription = dateTimeProcessorUnderTest
-                .describeDurationInMilliseconds(durationInMilliseconds);
-        assertThat(durationDescription).isEqualTo(expectedDescription.trim());
+    void describeDurationInMilliseconds_givenCommonDurations_returnsReadableString(long ms, String expected) {
+        assertThat(proc.describeDurationInMilliseconds(ms)).isEqualTo(expected.trim());
     }
 
     @Test
-    void describeDurationInMilliseconds_givenNegativeValue_throwsIllegalArgumentException() {
-        assertThatThrownBy(() -> dateTimeProcessorUnderTest.describeDurationInMilliseconds(-1))
+    void duration_negative_throws() {
+        assertThatThrownBy(() -> proc.describeDurationInMilliseconds(-1))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("durationInMilliseconds");
     }

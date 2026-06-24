@@ -16,99 +16,81 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("integration")
 class ServiceCompositionTests {
 
-    private static TextProcessor sharedTextProcessor;
-    private static DateTimeProcessor sharedDateTimeProcessor;
+    private static TextProcessor text;
+    private static DateTimeProcessor dt;
 
     @BeforeAll
-    static void bootstrapServiceRegistry() {
-        ServiceRegistry sharedServiceRegistry = new ServiceRegistry();
-        sharedTextProcessor = sharedServiceRegistry.getTextProcessor();
-        sharedDateTimeProcessor = sharedServiceRegistry.getDateTimeProcessor();
+    static void bootstrap() {
+        ServiceRegistry reg = new ServiceRegistry();
+        text = reg.getTextProcessor();
+        dt   = reg.getDateTimeProcessor();
     }
 
     @Test
     void pipeline_humanizeThenCapitalise_producesTitleCasedOutput() {
-        String rawIdentifier = "orderLineItems";
+        String humanised = text.humanizeIdentifier("orderLineItems");
+        String result    = text.convertToTitleCase(humanised);
 
-        String humanisedPhrase = sharedTextProcessor.humanizeIdentifier(rawIdentifier);
-        String titleCasedResult = sharedTextProcessor.convertToTitleCase(humanisedPhrase);
-
-        assertThat(titleCasedResult).isNotBlank();
-        assertThat(Character.isUpperCase(titleCasedResult.charAt(0))).isTrue();
-        assertThat(titleCasedResult).contains("Order");
-        assertThat(titleCasedResult).contains("Line");
-        assertThat(titleCasedResult).contains("Items");
+        assertThat(result).isNotBlank();
+        assertThat(Character.isUpperCase(result.charAt(0))).isTrue();
+        assertThat(result).contains("Order").contains("Line").contains("Items");
     }
 
     @Test
-    void pipeline_numberWordsAndOrdinalComposed_producesMeaningfulSummary() {
-        String itemCountInWords = sharedTextProcessor.convertNumberToWords(3);
-        String runNumberOrdinal = sharedTextProcessor.formatAsOrdinal(3);
-        String batchLabel = sharedTextProcessor.convertToTitleCase("batch processing run");
+    void numberWordsAndOrdinalCompose() {
+        String words   = text.convertNumberToWords(3);
+        String ordinal = text.formatAsOrdinal(3);
+        String label   = text.convertToTitleCase("batch processing run");
+        String summary = label + ": " + words.trim() + " items processed (" + ordinal + " run)";
 
-        String deploymentSummary = batchLabel + ": " + itemCountInWords.trim()
-                + " items processed (" + runNumberOrdinal + " run)";
-
-        assertThat(deploymentSummary).containsIgnoringCase("three");
-        assertThat(deploymentSummary).contains("3rd");
-        assertThat(deploymentSummary).startsWith("Batch");
+        assertThat(summary).containsIgnoringCase("three");
+        assertThat(summary).contains("3rd");
+        assertThat(summary).startsWith("Batch");
     }
 
     @Test
     void pipeline_dateTimeAndTextComposed_producesNotificationMessage() {
-        Date referenceDate = new Date(1717243200000L);
-        Date twoHoursBeforeReference = new Date(referenceDate.getTime() - 2L * 3_600_000L);
+        Date base = new Date(1717243200000L);
+        Date twoHoursBefore = new Date(base.getTime() - 2L * 3_600_000L);
 
-        String relativeTimeDescription = sharedDateTimeProcessor
-                .describeRelativeTo(twoHoursBeforeReference, referenceDate);
-        String eventLabel = sharedTextProcessor.humanizeIdentifier("deploymentTriggered");
+        String timeDesc  = dt.describeRelativeTo(twoHoursBefore, base);
+        String eventName = text.humanizeIdentifier("deploymentTriggered");
+        String msg       = eventName + " " + timeDesc + ".";
 
-        String notificationMessage = eventLabel + " " + relativeTimeDescription + ".";
-
-        assertThat(notificationMessage).isNotBlank();
-        assertThat(notificationMessage).endsWith(".");
-        assertThat(relativeTimeDescription).contains("hour");
-        assertThat(relativeTimeDescription).endsWith("ago");
+        assertThat(msg).isNotBlank().endsWith(".");
+        assertThat(timeDesc).contains("hour").endsWith("ago");
     }
 
     @Test
-    void pipeline_byteSizeAndWordCount_produceConsistentStorageSummary() {
-        long oneKilobyte = 1024L;
+    void byteSizeAndWordCount_storeSummary() {
+        String sizeLabel = text.formatByteSize(1024L);
+        String inWords   = text.convertNumberToWords(1024L);
 
-        String humanReadableSizeLabel = sharedTextProcessor.formatByteSize(oneKilobyte);
-        String byteCountInWords = sharedTextProcessor.convertNumberToWords(oneKilobyte);
-
-        assertThat(humanReadableSizeLabel).isEqualTo("1 KB");
-        assertThat(byteCountInWords.trim()).containsIgnoringCase("thousand");
+        assertThat(sizeLabel).isEqualTo("1 KB");
+        assertThat(inWords.trim()).containsIgnoringCase("thousand");
     }
 
     @Test
     void pipeline_truncateAndHumanize_shortenedOutputIsStillReadable() {
-        String verboseIdentifier = "thisIsAVeryLongCamelCaseIdentifierThatShouldBeTruncated";
+        String humanised  = text.humanizeIdentifier("thisIsAVeryLongCamelCaseIdentifierThatShouldBeTruncated");
+        String truncated  = text.truncateToLength(humanised, 20);
 
-        String humanisedVerboseIdentifier = sharedTextProcessor.humanizeIdentifier(verboseIdentifier);
-        String truncatedReadableLabel = sharedTextProcessor.truncateToLength(humanisedVerboseIdentifier, 20);
-
-        assertThat(truncatedReadableLabel.length()).isLessThanOrEqualTo(20);
-        assertThat(truncatedReadableLabel).isNotBlank();
+        assertThat(truncated.length()).isLessThanOrEqualTo(20);
+        assertThat(truncated).isNotBlank();
     }
 
     @ParameterizedTest(name = "ordinal({0}) ends with a letter")
     @ValueSource(ints = {1, 2, 3, 11, 21, 100})
-    void formatAsOrdinal_givenVariousPositiveIntegers_returnsNonBlankOrdinalString(
-            int positionalNumber) {
-        String ordinalResult = sharedTextProcessor.formatAsOrdinal(positionalNumber);
-
-        assertThat(ordinalResult).isNotBlank();
-        char lastCharacterOfOrdinal = ordinalResult.charAt(ordinalResult.length() - 1);
-        assertThat(Character.isLetter(lastCharacterOfOrdinal)).isTrue();
+    void ordinals_allEndWithLetter(int n) {
+        String result = text.formatAsOrdinal(n);
+        assertThat(result).isNotBlank();
+        assertThat(Character.isLetter(result.charAt(result.length() - 1))).isTrue();
     }
 
     @Test
-    void serviceRegistry_allServicesResolveToNonNullInstances() {
-        ServiceRegistry freshRegistry = new ServiceRegistry();
-
-        assertThat(freshRegistry.getTextProcessor()).isNotNull();
-        assertThat(freshRegistry.getDateTimeProcessor()).isNotNull();
+    void serviceRegistry_servicesNotNull() {
+        ServiceRegistry reg = new ServiceRegistry();
+        assertThat(reg.getTextProcessor()).isNotNull();
+        assertThat(reg.getDateTimeProcessor()).isNotNull();
     }
 }

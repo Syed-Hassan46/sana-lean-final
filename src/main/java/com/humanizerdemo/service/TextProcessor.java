@@ -2,139 +2,100 @@ package com.humanizerdemo.service;
 
 public class TextProcessor {
 
-    private static final String[] unitNames = {
+    private static final String[] UNITS = {
         "", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
         "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
         "seventeen", "eighteen", "nineteen"
     };
 
-    private static final String[] tensNames = {
+    private static final String[] TENS = {
         "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"
     };
 
-    private static final String[] ordinalSuffixes = {"th", "st", "nd", "rd"};
-
-    public String humanizeIdentifier(String rawIdentifier) {
-        if (rawIdentifier == null || rawIdentifier.trim().isEmpty()) {
+    public String humanizeIdentifier(String input) {
+        if (input == null || input.trim().isEmpty()) {
             throw new IllegalArgumentException("rawIdentifier must not be null or blank");
         }
-        String withSpaces = rawIdentifier
+        String s = input
             .replaceAll("_", " ")
             .replaceAll("([a-z])([A-Z])", "$1 $2")
             .replaceAll("([A-Z]+)([A-Z][a-z])", "$1 $2")
             .toLowerCase()
             .trim();
-        return Character.toUpperCase(withSpaces.charAt(0)) + withSpaces.substring(1);
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
-    public String convertToTitleCase(String plainSentence) {
-        if (plainSentence == null || plainSentence.trim().isEmpty()) {
+    public String convertToTitleCase(String sentence) {
+        if (sentence == null || sentence.trim().isEmpty()) {
             throw new IllegalArgumentException("plainSentence must not be null or blank");
         }
-        String[] words = plainSentence.trim().split("\\s+");
-        StringBuilder titleCasedResult = new StringBuilder();
+        String[] words = sentence.trim().split("\\s+");
+        StringBuilder sb = new StringBuilder();
         for (String word : words) {
-            if (titleCasedResult.length() > 0) {
-                titleCasedResult.append(" ");
-            }
-            titleCasedResult.append(Character.toUpperCase(word.charAt(0)));
-            titleCasedResult.append(word.substring(1).toLowerCase());
+            if (sb.length() > 0) sb.append(" ");
+            sb.append(Character.toUpperCase(word.charAt(0)));
+            sb.append(word.substring(1).toLowerCase());
         }
-        return titleCasedResult.toString();
+        return sb.toString();
     }
 
-    public String truncateToLength(String fullText, int maximumCharacters) {
-        if (fullText == null) {
+    public String truncateToLength(String text, int maxChars) {
+        if (text == null) {
             throw new IllegalArgumentException("fullText must not be null");
         }
-        if (maximumCharacters <= 0) {
+        if (maxChars <= 0) {
             throw new IllegalArgumentException("maximumCharacters must be a positive integer");
         }
-        if (fullText.length() <= maximumCharacters) {
-            return fullText;
-        }
-        if (maximumCharacters <= 3) {
-            return fullText.substring(0, maximumCharacters);
-        }
-        return fullText.substring(0, maximumCharacters - 3) + "...";
+        if (text.length() <= maxChars) return text;
+        if (maxChars <= 3) return text.substring(0, maxChars);
+        return text.substring(0, maxChars - 3) + "...";
     }
 
-    public String convertNumberToWords(long numericValue) {
-        if (numericValue < 0) {
-            return "minus " + convertNumberToWords(-numericValue);
-        }
-        if (numericValue == 0) {
-            return "zero";
-        }
-        return convertBelowThousand(numericValue).trim();
+    public String convertNumberToWords(long n) {
+        if (n < 0) return "minus " + convertNumberToWords(-n);
+        if (n == 0) return "zero";
+        return toWords(n).trim();
     }
 
-    private String convertBelowThousand(long numericValue) {
-        if (numericValue == 0) {
-            return "";
-        }
-        if (numericValue < 20) {
-            return unitNames[(int) numericValue] + " ";
-        }
-        if (numericValue < 100) {
-            return tensNames[(int) (numericValue / 10)]
-                + (numericValue % 10 != 0 ? "-" + unitNames[(int) (numericValue % 10)] : "")
-                + " ";
-        }
-        if (numericValue < 1000) {
-            return unitNames[(int) (numericValue / 100)] + " hundred "
-                + convertBelowThousand(numericValue % 100);
-        }
-        if (numericValue < 1_000_000) {
-            return convertBelowThousand(numericValue / 1000) + "thousand "
-                + convertBelowThousand(numericValue % 1000);
-        }
-        if (numericValue < 1_000_000_000) {
-            return convertBelowThousand(numericValue / 1_000_000) + "million "
-                + convertBelowThousand(numericValue % 1_000_000);
-        }
-        return convertBelowThousand(numericValue / 1_000_000_000) + "billion "
-            + convertBelowThousand(numericValue % 1_000_000_000);
+    private String toWords(long n) {
+        if (n == 0) return "";
+        if (n < 20) return UNITS[(int) n] + " ";
+        if (n < 100) return TENS[(int) (n / 10)] + (n % 10 != 0 ? "-" + UNITS[(int) (n % 10)] : "") + " ";
+        if (n < 1000) return UNITS[(int) (n / 100)] + " hundred " + toWords(n % 100);
+        if (n < 1_000_000) return toWords(n / 1000) + "thousand " + toWords(n % 1000);
+        if (n < 1_000_000_000) return toWords(n / 1_000_000) + "million " + toWords(n % 1_000_000);
+        return toWords(n / 1_000_000_000) + "billion " + toWords(n % 1_000_000_000);
     }
 
-    public String formatAsOrdinal(int positionalNumber) {
-        if (positionalNumber < 0) {
+    public String formatAsOrdinal(int n) {
+        if (n < 0) {
             throw new IllegalArgumentException("positionalNumber must be zero or greater");
         }
-        int lastTwoDigits = positionalNumber % 100;
-        int lastDigit = positionalNumber % 10;
+        int mod100 = n % 100;
+        int mod10  = n % 10;
         String suffix;
-        if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
-            suffix = "th";
-        } else if (lastDigit == 1) {
-            suffix = "st";
-        } else if (lastDigit == 2) {
-            suffix = "nd";
-        } else if (lastDigit == 3) {
-            suffix = "rd";
-        } else {
-            suffix = "th";
-        }
-        return positionalNumber + suffix;
+        if (mod100 >= 11 && mod100 <= 13) suffix = "th";
+        else if (mod10 == 1) suffix = "st";
+        else if (mod10 == 2) suffix = "nd";
+        else if (mod10 == 3) suffix = "rd";
+        else                  suffix = "th";
+        return n + suffix;
     }
 
-    public String formatByteSize(long totalBytes) {
-        if (totalBytes < 0) {
+    public String formatByteSize(long bytes) {
+        if (bytes < 0) {
             throw new IllegalArgumentException("totalBytes must be zero or greater");
         }
-        if (totalBytes == 0) {
-            return "0 B";
+        if (bytes == 0) return "0 B";
+        String[] labels = {"B", "KB", "MB", "GB", "TB"};
+        int i = 0;
+        double val = bytes;
+        while (val >= 1024 && i < labels.length - 1) {
+            val /= 1024;
+            i++;
         }
-        String[] unitLabels = {"B", "KB", "MB", "GB", "TB"};
-        int unitIndex = 0;
-        double scaledValue = totalBytes;
-        while (scaledValue >= 1024 && unitIndex < unitLabels.length - 1) {
-            scaledValue /= 1024;
-            unitIndex++;
-        }
-        if (scaledValue == (long) scaledValue) {
-            return (long) scaledValue + " " + unitLabels[unitIndex];
-        }
-        return String.format("%.1f %s", scaledValue, unitLabels[unitIndex]);
+        return val == (long) val
+            ? (long) val + " " + labels[i]
+            : String.format("%.1f %s", val, labels[i]);
     }
 }
