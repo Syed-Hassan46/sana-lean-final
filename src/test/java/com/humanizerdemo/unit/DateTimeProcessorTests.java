@@ -31,8 +31,8 @@ class DateTimeProcessorTests {
 
     @Test
     void oneHourBefore_returnsAnHourAgo() {
-        Date oneHourBefore = new Date(ref.getTime() - 3_600_000L);
-        assertThat(proc.describeRelativeTo(oneHourBefore, ref)).isEqualTo("an hour ago");
+        Date d = new Date(ref.getTime() - 3_600_000L);
+        assertThat(proc.describeRelativeTo(d, ref)).isEqualTo("an hour ago");
     }
 
     @Test
@@ -57,8 +57,8 @@ class DateTimeProcessorTests {
 
     @ParameterizedTest(name = "duration({0}ms) => ''{1}''")
     @CsvSource({
-        "60000,    a minute",
-        "3600000,  an hour",
+        "60000, a minute",
+        "3600000, an hour",
         "86400000, a day"
     })
     void duration_commonValues_readableString(long ms, String expected) {

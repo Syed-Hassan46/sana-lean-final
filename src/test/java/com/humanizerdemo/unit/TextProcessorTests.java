@@ -51,15 +51,14 @@ class TextProcessorTests {
         assertThat(processor.convertToTitleCase(input)).isEqualTo(expected);
     }
 
-    @ParameterizedTest(name = "truncate ''{0}'' at {1}")
+    @ParameterizedTest(name = "truncate at {1} chars")
     @CsvSource({
         "This is a very long sentence that should be truncated., 10, 10",
         "Hi, 100, 2",
         "Hello, 5, 5"
     })
     void truncate_variousLengths_staysWithinLimit(String input, int maxChars, int expectedMax) {
-        String result = processor.truncateToLength(input, maxChars);
-        assertThat(result.length()).isLessThanOrEqualTo(expectedMax);
+        assertThat(processor.truncateToLength(input, maxChars).length()).isLessThanOrEqualTo(expectedMax);
     }
 
     @Test
@@ -83,10 +82,10 @@ class TextProcessorTests {
 
     @ParameterizedTest(name = "{0} => ''{1}''")
     @CsvSource({
-        "1,  1st",
-        "2,  2nd",
-        "3,  3rd",
-        "4,  4th",
+        "1, 1st",
+        "2, 2nd",
+        "3, 3rd",
+        "4, 4th",
         "11, 11th",
         "21, 21st"
     })
