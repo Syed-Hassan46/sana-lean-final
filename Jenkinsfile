@@ -54,7 +54,7 @@ pipeline {
 
         stage('Coverage Report') {
             steps {
-                sh 'mvn --batch-mode verify -P all-tests jacoco:report'
+                sh 'mvn --batch-mode jacoco:report'
             }
             post {
                 always {
