@@ -1,23 +1,10 @@
 pipeline {
     agent any
 
-    environment {
-        JAVA_TOOL_OPTIONS = '-Dfile.encoding=UTF-8'
-        MAVEN_OPTS        = '-Xmx512m -XX:MaxMetaspaceSize=128m'
-        MVN               = 'mvn --batch-mode --no-transfer-progress'
-        TEST_REPORTS_DIR  = 'target/surefire-reports'
-        COVERAGE_DIR      = 'target/coverage-report'
-    }
-
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timeout(time: 20, unit: 'MINUTES')
         disableConcurrentBuilds()
-        timestamps()
-    }
-
-    triggers {
-        pollSCM('H/5 * * * *')
     }
 
     stages {
@@ -31,27 +18,17 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh '''
-                    java -version
-                    ${MVN} clean compile
-                '''
+                sh 'mvn --batch-mode clean compile'
             }
         }
 
         stage('Unit Tests') {
             steps {
-                sh '''
-                    ${MVN} test \
-                        -P unit-tests \
-                        -Djacoco.skip=false
-                '''
+                sh 'mvn --batch-mode test -P unit-tests'
             }
             post {
                 always {
-                    junit testResults: "${TEST_REPORTS_DIR}/*.xml",
-                          allowEmptyResults: true
-                    archiveArtifacts artifacts: "${TEST_REPORTS_DIR}/**",
-                                     allowEmptyArchive: true
+                    junit 'target/surefire-reports/*.xml'
                 }
             }
         }
@@ -60,81 +37,41 @@ pipeline {
             when {
                 anyOf {
                     branch 'main'
-                    branch 'master'
                     changeset 'src/main/**'
                     changeset 'src/test/**'
                     changeset 'pom.xml'
                 }
             }
             steps {
-                sh '''
-                    ${MVN} test \
-                        -P integration-tests \
-                        -Djacoco.skip=false
-                '''
+                sh 'mvn --batch-mode test -P integration-tests'
             }
             post {
                 always {
-                    junit testResults: "${TEST_REPORTS_DIR}/*.xml",
-                          allowEmptyResults: true
-                    archiveArtifacts artifacts: "${TEST_REPORTS_DIR}/**",
-                                     allowEmptyArchive: true
+                    junit 'target/surefire-reports/*.xml'
                 }
             }
         }
 
         stage('Coverage Report') {
             steps {
-                sh '''
-                    ${MVN} verify \
-                        -P all-tests \
-                        -DskipTests=false \
-                        jacoco:report
-                '''
+                sh 'mvn --batch-mode verify -P all-tests jacoco:report'
             }
             post {
                 always {
                     publishHTML(target: [
-                        allowMissing         : true,
-                        alwaysLinkToLastBuild: false,
-                        keepAll              : true,
-                        reportDir            : "${COVERAGE_DIR}",
-                        reportFiles          : 'index.html',
-                        reportName           : 'JaCoCo Coverage Report'
+                        reportDir  : 'target/coverage-report',
+                        reportFiles: 'index.html',
+                        reportName : 'Coverage Report',
+                        keepAll    : true
                     ])
-                    archiveArtifacts artifacts: "${COVERAGE_DIR}/**",
-                                     allowEmptyArchive: true
                 }
-            }
-        }
-
-        stage('Archive') {
-            steps {
-                sh 'echo "Archiving final artefacts..."'
-                archiveArtifacts artifacts: 'target/**/*.jar,target/surefire-reports/**',
-                                 allowEmptyArchive: true
             }
         }
     }
 
     post {
-        success {
-            echo 'Pipeline PASSED — all selected tests green.'
-        }
-        failure {
-            echo 'Pipeline FAILED — review test results above.'
-        }
-        unstable {
-            echo 'Pipeline UNSTABLE — one or more tests failed.'
-        }
         always {
-            cleanWs(
-                cleanWhenNotBuilt: false,
-                deleteDirs: true,
-                disableDeferredWipeout: true,
-                notFailBuild: true,
-                patterns: [[pattern: '.gitignore', type: 'EXCLUDE']]
-            )
+            cleanWs()
         }
     }
 }
