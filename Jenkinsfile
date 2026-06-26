@@ -59,7 +59,7 @@ pipeline {
             post {
                 always {
                     publishHTML(target: [
-                        reportDir  : 'target/coverage-report',
+                        reportDir  : 'target/site/jacoco',
                         reportFiles: 'index.html',
                         reportName : 'Coverage Report',
                         keepAll    : true
